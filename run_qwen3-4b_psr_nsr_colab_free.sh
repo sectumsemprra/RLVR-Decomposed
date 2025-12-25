@@ -40,7 +40,7 @@ python3 -m verl.trainer.main_ppo \
     data.truncation='error' \
     data.prompt_template_type=$prompt_template_type \
     actor_rollout_ref.model.path=$model_name \
-    actor_rollout_ref.model.attn_implementation=eager \
+    +actor_rollout_ref.model.attn_implementation=eager \
     actor_rollout_ref.actor.optim.lr=$lr \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
