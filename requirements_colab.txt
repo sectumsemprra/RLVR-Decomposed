@@ -1,0 +1,34 @@
+# Requirements for Google Colab
+# Install with: pip install -r requirements_colab.txt
+
+# Core dependencies
+accelerate
+codetiming
+datasets
+dill
+hydra-core
+numpy
+pandas
+peft
+pyarrow>=15.0.0
+pybind11
+pylatexenc
+ray>=2.10
+torchdata
+wandb
+
+# Qwen3 specific versions (CRITICAL for Qwen3 models)
+transformers==4.52.2
+vllm==0.8.5
+tensordict==0.7.2
+
+# Additional utilities
+latex2sympy2
+fire
+
+# GPU optimizations (install separately with --no-build-isolation)
+# Run: python -m pip install flash-attn --no-build-isolation
+# flash-attn
+
+# Optional: For better performance
+# liger-kernel
