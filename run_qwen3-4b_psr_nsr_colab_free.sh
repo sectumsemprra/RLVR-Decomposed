@@ -33,9 +33,9 @@ python3 -m verl.trainer.main_ppo \
     algorithm.advantage=$advantage \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
-    data.train_batch_size=16 \
+    data.train_batch_size=8 \
     data.max_prompt_length=512 \
-    data.max_response_length=2048 \
+    data.max_response_length=1536 \
     data.filter_overlong_prompts=True \
     data.truncation='error' \
     data.prompt_template_type=$prompt_template_type \
@@ -56,8 +56,9 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.dtype=float16 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
-    actor_rollout_ref.rollout.max_num_batched_tokens=4096 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
+    actor_rollout_ref.rollout.max_num_batched_tokens=2048 \
+    actor_rollout_ref.rollout.max_num_seqs=512 \
     actor_rollout_ref.rollout.n=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     trainer.experiment_name="MATH-Qwen3-4B-$advantage-colab-free" \
@@ -78,31 +79,34 @@ python3 -m verl.trainer.main_ppo \
 # 1. model: Qwen3-4B -> Qwen2.5-0.5B-Instruct (10x smaller)
 # 2. n_gpus_per_node: 8 -> 1 (Colab has 1 GPU)
 # 3. tensor_model_parallel_size: 2 -> 1 (No multi-GPU parallelism)
-# 4. train_batch_size: 1024 -> 16 (64x reduction for memory)
+# 4. train_batch_size: 1024 -> 8 (128x reduction for memory)
 # 5. max_prompt_length: 1024 -> 512 (Reduce context)
-# 6. max_response_length: 31744 -> 2048 (16x reduction, necessary for memory)
+# 6. max_response_length: 31744 -> 1536 (21x reduction, necessary for memory)
 # 7. ppo_max_token_len_per_gpu: 48000 -> 4000 (12x reduction)
 # 8. log_prob_max_token_len_per_gpu: 64000 -> 6000 (10x reduction)
 # 9. ppo_mini_batch_size: 256 -> 8 (32x reduction)
 # 10. rollout.n: 8 -> 2 (4x fewer rollout samples per prompt)
-# 11. gpu_memory_utilization: 0.7 -> 0.4 (Reduce vLLM KV cache to ~4GB)
-# 12. max_num_batched_tokens: 16384 -> 4096 (Reduce vLLM batch size)
-# 13. param_offload: False -> True (Offload to CPU to save GPU memory)
-# 14. optimizer_offload: False -> True (Offload optimizer states)
-# 15. free_cache_engine: False -> True (Free cache between iterations)
-# 16. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
+# 11. gpu_memory_utilization: 0.7 -> 0.3 (Reduce vLLM KV cache to ~3GB)
+# 12. max_num_batched_tokens: 16384 -> 2048 (8x reduction for vLLM batch)
+# 13. max_num_seqs: 1024 -> 512 (Limit parallel sequences in vLLM)
+# 14. param_offload: False -> True (Offload to CPU to save GPU memory)
+# 15. optimizer_offload: False -> True (Offload optimizer states)
+# 16. free_cache_engine: False -> True (Free cache between iterations)
+# 17. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
 #
 # MEMORY BREAKDOWN (Expected with these settings):
 # - Model weights: 0.93GB
-# - vLLM KV cache: ~4GB (gpu_memory_utilization=0.4)
-# - Activations: ~1.4GB
-# - Total WorkerDict: ~7-8GB
+# - vLLM KV cache: ~3GB (gpu_memory_utilization=0.3, reduced sequences/tokens)
+# - Activations: ~1.2GB (reduced due to smaller batches)
+# - Total WorkerDict: ~6-7GB (target: down from 8.87GB)
 # - Ray overhead: ~2-3GB
-# - Target: ~10-11GB / 12.67GB = 85% (safe margin below 95% threshold)
+# - Target: ~9-10GB / 12.67GB = 75-80% (safe margin below 95% threshold)
 #
-# LIMITATIONS:
-# - Training will be 40-50x slower than original
-# - Much smaller batch size will affect convergence quality
-# - Shortened response length limits reasoning capability
-# - Smaller model (0.5B) has lower reasoning ability than 4B
-# - Fewer rollout samples (n=2) may reduce exploration
+# LIMITATIONS (EXTREME - This is bare minimum to fit in Colab free):
+# - Training will be 100-150x slower than original (batch size 8 vs 1024)
+# - Extremely small batch size (8) will significantly affect convergence quality
+# - Very short response length (1536 tokens) severely limits reasoning capability
+# - Smaller model (0.5B) has much lower reasoning ability than 4B
+# - Fewer rollout samples (n=2) reduces exploration
+# - This is the MINIMUM viable configuration for Colab free tier
+# - If this still OOMs, you MUST use Colab Pro with more RAM
