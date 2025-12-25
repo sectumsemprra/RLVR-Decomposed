@@ -22,9 +22,9 @@ kl_coef=0.0
 lr=1e-6
 
 # CRITICAL: Consider using smaller model for Colab free
-# model_name=Qwen/Qwen2.5-0.5B-Instruct  # Much smaller, will fit better
+model_name=Qwen/Qwen2.5-0.5B-Instruct  # Much smaller, will fit better (RECOMMENDED FOR COLAB FREE)
 # model_name=Qwen/Qwen2.5-1.5B-Instruct  # Good balance
-model_name=Qwen/Qwen3-4B  # Original, will be tight on memory
+# model_name=Qwen/Qwen3-4B  # Original, TOO LARGE for Colab Free (causes OOM)
 
 prompt_template_type="qwen3_no_thinking"
 
