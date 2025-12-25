@@ -53,20 +53,55 @@ print(f"Ray: {ray.__version__}")
 # !wget -O data/amc23/test.parquet YOUR_URL
 ```
 
-### Step 6: Run Training
+### Step 6: Run Training with Real-Time Progress
 
 **For Colab FREE (T4 GPU) - Use smaller model:**
 ```python
 # Modify script to use smaller model (recommended for T4)
 !sed -i 's/model_name=Qwen\/Qwen3-4B/model_name=Qwen\/Qwen2.5-0.5B-Instruct/' run_qwen3-4b_psr_nsr_colab_free.sh
 
-# Run training
-!bash run_qwen3-4b_psr_nsr_colab_free.sh
+# Run training with REAL-TIME OUTPUT (you'll see every epoch!)
+!bash run_qwen3-4b_psr_nsr_colab_free.sh 2>&1 | tee training.log
 ```
 
 **For Colab PRO (A100/V100) - Keep original model:**
 ```python
-!bash run_qwen3-4b_psr_nsr_colab_pro.sh
+# Run with real-time output
+!bash run_qwen3-4b_psr_nsr_colab_pro.sh 2>&1 | tee training.log
+```
+
+**You will see output like:**
+```
+Epoch 1/20 - Iteration 10/235 - Loss: 1.234 - ETA: 1.2 hours
+Epoch 1/20 - Iteration 20/235 - Loss: 1.156 - ETA: 1.1 hours
+...
+Epoch 1 complete! Time: 1.3 hours
+Epoch 2/20 - Starting...
+```
+
+### Step 7: Monitor Progress (Optional)
+
+**In a separate cell, monitor training while it runs:**
+```python
+# Watch the last 20 lines of output, refreshing every 10 seconds
+import time
+from IPython.display import clear_output
+
+for i in range(1000):
+    clear_output(wait=True)
+    !tail -n 20 training.log
+    print(f"\n🔄 Refreshed {i+1} times | Press ■ (stop) to exit")
+    time.sleep(10)
+```
+
+**Check current epoch:**
+```python
+!grep "Epoch" training.log | tail -5
+```
+
+**Check GPU usage:**
+```python
+!nvidia-smi
 ```
 
 ---
