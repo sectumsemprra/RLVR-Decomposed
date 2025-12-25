@@ -33,7 +33,7 @@ python3 -m verl.trainer.main_ppo \
     algorithm.advantage=$advantage \
     data.train_files="$train_files" \
     data.val_files="$test_files" \
-    data.train_batch_size=32 \
+    data.train_batch_size=16 \
     data.max_prompt_length=512 \
     data.max_response_length=2048 \
     data.filter_overlong_prompts=True \
@@ -56,9 +56,9 @@ python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
     actor_rollout_ref.rollout.dtype=float16 \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.5 \
-    actor_rollout_ref.rollout.max_num_batched_tokens=8192 \
-    actor_rollout_ref.rollout.n=4 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
+    actor_rollout_ref.rollout.max_num_batched_tokens=4096 \
+    actor_rollout_ref.rollout.n=2 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     trainer.experiment_name="MATH-Qwen3-4B-$advantage-colab-free" \
     algorithm.kl_ctrl.kl_coef=$kl_coef \
@@ -73,25 +73,36 @@ python3 -m verl.trainer.main_ppo \
     trainer.total_epochs=20 $@
     # algorithm.positive_advantage_weight=$positive_advantage_weight \
 
-# KEY CHANGES FROM ORIGINAL:
-# ========================
-# 1. n_gpus_per_node: 8 -> 1 (Colab has 1 GPU)
-# 2. tensor_model_parallel_size: 2 -> 1 (No multi-GPU parallelism)
-# 3. train_batch_size: 1024 -> 32 (Drastic reduction for memory)
-# 4. max_prompt_length: 1024 -> 512 (Reduce context)
-# 5. max_response_length: 31744 -> 2048 (HUGE reduction, but necessary)
-# 6. ppo_max_token_len_per_gpu: 48000 -> 4000 (Memory constraint)
-# 7. log_prob_max_token_len_per_gpu: 64000 -> 6000 (Memory constraint)
-# 8. ppo_mini_batch_size: 256 -> 8 (Reduce batch processing)
-# 9. rollout.n: 8 -> 4 (Fewer rollout samples)
-# 10. gpu_memory_utilization: 0.7 -> 0.85 (Use more of available memory)
-# 11. param_offload: False -> True (Offload to CPU to save GPU memory)
-# 12. optimizer_offload: False -> True (Offload optimizer states)
-# 13. free_cache_engine: False -> True (Free cache between iterations)
-# 14. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
+# KEY CHANGES FROM ORIGINAL (EXTREME OPTIMIZATIONS FOR COLAB FREE):
+# ================================================================
+# 1. model: Qwen3-4B -> Qwen2.5-0.5B-Instruct (10x smaller)
+# 2. n_gpus_per_node: 8 -> 1 (Colab has 1 GPU)
+# 3. tensor_model_parallel_size: 2 -> 1 (No multi-GPU parallelism)
+# 4. train_batch_size: 1024 -> 16 (64x reduction for memory)
+# 5. max_prompt_length: 1024 -> 512 (Reduce context)
+# 6. max_response_length: 31744 -> 2048 (16x reduction, necessary for memory)
+# 7. ppo_max_token_len_per_gpu: 48000 -> 4000 (12x reduction)
+# 8. log_prob_max_token_len_per_gpu: 64000 -> 6000 (10x reduction)
+# 9. ppo_mini_batch_size: 256 -> 8 (32x reduction)
+# 10. rollout.n: 8 -> 2 (4x fewer rollout samples per prompt)
+# 11. gpu_memory_utilization: 0.7 -> 0.4 (Reduce vLLM KV cache to ~4GB)
+# 12. max_num_batched_tokens: 16384 -> 4096 (Reduce vLLM batch size)
+# 13. param_offload: False -> True (Offload to CPU to save GPU memory)
+# 14. optimizer_offload: False -> True (Offload optimizer states)
+# 15. free_cache_engine: False -> True (Free cache between iterations)
+# 16. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
+#
+# MEMORY BREAKDOWN (Expected with these settings):
+# - Model weights: 0.93GB
+# - vLLM KV cache: ~4GB (gpu_memory_utilization=0.4)
+# - Activations: ~1.4GB
+# - Total WorkerDict: ~7-8GB
+# - Ray overhead: ~2-3GB
+# - Target: ~10-11GB / 12.67GB = 85% (safe margin below 95% threshold)
 #
 # LIMITATIONS:
-# - Training will be 20-30x slower
-# - Reduced batch size may affect convergence
+# - Training will be 40-50x slower than original
+# - Much smaller batch size will affect convergence quality
 # - Shortened response length limits reasoning capability
-# - May still OOM on T4; consider using Qwen2.5-0.5B or 1.5B instead
+# - Smaller model (0.5B) has lower reasoning ability than 4B
+# - Fewer rollout samples (n=2) may reduce exploration
