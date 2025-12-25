@@ -4,6 +4,8 @@
 # Better performance than free tier, but still single GPU
 
 export RAY_DEDUP_LOGS=0
+# Disable flash attention (not available on Colab by default)
+export VERL_DISABLE_FLASH_ATTN=1
 
 math_train_path=./data/math/train.parquet
 math_test_path=./data/math/test.parquet
@@ -33,6 +35,7 @@ python3 -m verl.trainer.main_ppo \
     data.truncation='error' \
     data.prompt_template_type=$prompt_template_type \
     actor_rollout_ref.model.path=$model_name \
+    actor_rollout_ref.model.attn_implementation=eager \
     actor_rollout_ref.actor.optim.lr=$lr \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -76,6 +79,7 @@ python3 -m verl.trainer.main_ppo \
 # 9. gpu_memory_utilization: 0.7 -> 0.80 (Use more GPU memory)
 # 10. param_offload: False -> False (Keep on GPU for speed)
 # 11. optimizer_offload: False -> True (CPU offload for optimizer only)
+# 12. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
 #
 # ADVANTAGES OVER FREE TIER:
 # - 8x larger batch size (256 vs 32)

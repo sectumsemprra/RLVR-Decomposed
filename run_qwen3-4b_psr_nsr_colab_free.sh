@@ -4,6 +4,8 @@
 # WARNING: Training will be MUCH slower and results may vary
 
 export RAY_DEDUP_LOGS=0
+# Disable flash attention (not available on Colab by default)
+export VERL_DISABLE_FLASH_ATTN=1
 
 math_train_path=./data/math/train.parquet
 math_test_path=./data/math/test.parquet
@@ -38,6 +40,7 @@ python3 -m verl.trainer.main_ppo \
     data.truncation='error' \
     data.prompt_template_type=$prompt_template_type \
     actor_rollout_ref.model.path=$model_name \
+    actor_rollout_ref.model.attn_implementation=eager \
     actor_rollout_ref.actor.optim.lr=$lr \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
@@ -83,6 +86,7 @@ python3 -m verl.trainer.main_ppo \
 # 11. param_offload: False -> True (Offload to CPU to save GPU memory)
 # 12. optimizer_offload: False -> True (Offload optimizer states)
 # 13. free_cache_engine: False -> True (Free cache between iterations)
+# 14. attn_implementation: flash_attn -> eager (No flash-attn on Colab)
 #
 # LIMITATIONS:
 # - Training will be 20-30x slower

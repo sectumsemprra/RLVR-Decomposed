@@ -26,9 +26,9 @@ tensordict==0.7.2
 latex2sympy2
 fire
 
-# GPU optimizations (install separately with --no-build-isolation)
-# Run: python -m pip install flash-attn --no-build-isolation
-# flash-attn
+# NOTE: flash-attn is NOT needed for Colab
+# The training scripts are configured to use eager attention mode
+# which works without flash-attn and avoids compilation issues
 
-# Optional: For better performance
+# Optional: For better performance (not required)
 # liger-kernel

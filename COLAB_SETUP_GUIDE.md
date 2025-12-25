@@ -39,13 +39,9 @@ This guide will help you run the RLVR-Decomposed training on Google Colab (both 
 ```python
 # Install main dependencies
 !pip install -r requirements_colab.txt
-
-# Install flash-attention (optional but recommended)
-# This may take 10-15 minutes
-!python -m pip install flash-attn --no-build-isolation
 ```
 
-**Note**: If flash-attention installation fails, you can skip it. The training will still work but may be slower.
+**Note**: Flash-attention is **NOT required**. The Colab training scripts are configured to use standard attention implementation (eager mode) which works without flash-attn. This avoids compilation issues on Colab.
 
 ### Step 3: Verify Installation
 

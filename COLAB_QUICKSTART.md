@@ -25,8 +25,7 @@ Open a new Google Colab notebook and paste these commands:
 # Install packages (takes 5-10 minutes)
 !pip install -r requirements_colab.txt
 
-# Optional: Install flash-attention for better performance (takes 10-15 min)
-# !python -m pip install flash-attn --no-build-isolation
+# NOTE: flash-attn is NOT needed - the scripts are configured to work without it
 ```
 
 ### Step 4: Verify Installation
